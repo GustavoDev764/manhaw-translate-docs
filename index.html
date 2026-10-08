@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Manhwa Translate</title>
+<meta name="description" content="Plataforma para scans traduzirem manhwas em equipe: importação, escaneamento e limpeza de balões em lote, leitura e tradução com IA, editor de texto e versões. Gratuita, menos a IA.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&family=Comic+Neue:wght@700&display=swap">
+<style>
+/* Layout: faixa vertical de webtoon como fio condutor; seções em coluna única de leitura, com uma "tira" de página ao lado do herói */
+:root {
+  --paper: #f6f7fb;
+  --panel: #ffffff;
+  --ink: #141a2b;
+  --muted: #5a6280;
+  --line: #dde1ee;
+  --brand: #3b6fd8;
+  --brand-ink: #ffffff;
+  --violet: #7b4fe0;
+  --soft: #e9eefc;
+  --ai: #c2410c;
+  --ai-soft: #fdeee4;
+  --free: #1f8a52;
+  --free-soft: #e3f4ea;
+  --balloon: #ffffff;
+  --balloon-ink: #111111;
+  --shadow: 0 1px 2px rgba(20, 26, 43, .06), 0 8px 24px rgba(20, 26, 43, .06);
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --comic: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1320;
+    --panel: #171c2c;
+    --ink: #e8ebf5;
+    --muted: #9aa3c0;
+    --line: #2a3148;
+    --brand: #6d97ee;
+    --brand-ink: #0b1020;
+    --violet: #a586f5;
+    --soft: #1d2640;
+    --ai: #f59e6b;
+    --ai-soft: #3a2316;
+    --free: #5fd394;
+    --free-soft: #15301f;
+    --balloon: #f4f4f4;
+    --balloon-ink: #111111;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1320;
+  --panel: #171c2c;
+  --ink: #e8ebf5;
+  --muted: #9aa3c0;
+  --line: #2a3148;
+  --brand: #6d97ee;
+  --brand-ink: #0b1020;
+  --violet: #a586f5;
+  --soft: #1d2640;
+  --ai: #f59e6b;
+  --ai-soft: #3a2316;
+  --free: #5fd394;
+  --free-soft: #15301f;
+  --balloon: #f4f4f4;
+  --balloon-ink: #111111;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1.0625rem/1.65 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; display: block; }
+a { color: var(--brand); }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; border-radius: 6px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: max(16px, 4vw); }
+.prose { max-width: 65ch; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.12; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.1rem, 5.2vw, 3.6rem); font-weight: 800; letter-spacing: -.02em; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); font-weight: 700; letter-spacing: -.01em; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; }
+.eyebrow { font: 700 .78rem/1.2 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--brand); }
+.lead { font-size: 1.2rem; color: var(--muted); }
+.muted { color: var(--muted); }
+
+header.top {
+  position: sticky; top: 0; z-index: 10;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 1.1rem/1 var(--display); color: var(--ink); text-decoration: none; }
+.logo svg { width: 26px; height: 26px; }
+nav.anchors { display: flex; gap: 18px; flex-wrap: wrap; font-size: .95rem; }
+nav.anchors a { color: var(--muted); text-decoration: none; font-weight: 500; }
+nav.anchors a:hover { color: var(--ink); }
+
+section { padding-block: clamp(56px, 8vw, 96px); }
+section + section { border-top: 1px solid var(--line); }
+.head { display: grid; gap: 12px; margin-bottom: 36px; }
+
+/* Herói */
+.hero { padding-block: clamp(48px, 7vw, 88px); }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
+.hero-copy { display: grid; gap: 22px; min-width: 0; }
+.tags { display: flex; flex-wrap: wrap; gap: 10px; }
+.tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: .9rem; font-weight: 600; }
+.tag.free { background: var(--free-soft); color: var(--free); }
+.tag.ai { background: var(--ai-soft); color: var(--ai); }
+.tag.state { background: var(--soft); color: var(--brand); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+/* Tira de página com balão EN → PT */
+.strip {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  max-width: 420px;
+  width: 100%;
+  justify-self: center;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  background:
+    radial-gradient(120% 70% at 50% 0%, #2b3a7a 0%, #141a33 55%, #0b0f1f 100%);
+}
+.strip::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(115deg, rgba(255,255,255,.07) 0 2px, transparent 2px 28px),
+    radial-gradient(60% 40% at 50% 85%, rgba(123,79,224,.55), transparent 70%);
+}
+.panel-cut { position: absolute; left: 0; right: 0; top: 58%; height: 6px; background: #000; opacity: .65; }
+.balloon {
+  position: absolute; left: 9%; right: 9%; top: 9%;
+  min-height: 42%;
+  background: var(--balloon);
+  border: 4px solid #000;
+  border-radius: 50% / 46%;
+  display: grid; place-items: center;
+  padding: 10% 13%;
+}
+.balloon::after {
+  content: "";
+  position: absolute; left: 58%; bottom: -26px;
+  border: 14px solid transparent; border-top: 30px solid #000; border-bottom: 0;
+  transform: skewX(-18deg);
+}
+.balloon::before {
+  content: "";
+  position: absolute; left: calc(58% + 4px); bottom: -17px; z-index: 1;
+  border: 10px solid transparent; border-top: 22px solid var(--balloon); border-bottom: 0;
+  transform: skewX(-18deg);
+}
+.lines { position: relative; display: grid; text-align: center; font: 700 clamp(1rem, 2.4vw, 1.35rem)/1.2 var(--comic); color: var(--balloon-ink); text-transform: uppercase; }
+.lines span { grid-area: 1 / 1; }
+.lines .en { animation: en 7s infinite; }
+.lines .pt { animation: pt 7s infinite; }
+@keyframes en { 0%, 38% { opacity: 1; } 46%, 92% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes pt { 0%, 38% { opacity: 0; } 46%, 92% { opacity: 1; } 100% { opacity: 0; } }
+.lang {
+  position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%);
+  display: flex; gap: 6px; padding: 5px; border-radius: 999px;
+  background: rgba(0,0,0,.55); font: 700 .78rem/1 var(--body); letter-spacing: .06em; color: #fff;
+}
+.lang b { padding: 6px 10px; border-radius: 999px; }
+.lang .l-en { animation: tab-en 7s infinite; }
+.lang .l-pt { animation: tab-pt 7s infinite; }
+@keyframes tab-en { 0%, 38% { background: #3b6fd8; } 46%, 92% { background: transparent; } 100% { background: #3b6fd8; } }
+@keyframes tab-pt { 0%, 38% { background: transparent; } 46%, 92% { background: #3b6fd8; } 100% { background: transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  .lines .en { animation: none; opacity: 0; }
+  .lines .pt { animation: none; opacity: 1; }
+  .lang .l-en, .lang .l-pt { animation: none; }
+  .lang .l-pt { background: #3b6fd8; }
+}
+.strip-caption { margin-top: 12px; font-size: .85rem; color: var(--muted); text-align: center; }
+
+/* Fluxo */
+.flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: step; }
+.flow > li {
+  position: relative;
+  display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 18px;
+  padding-bottom: 28px;
+}
+.flow > li::before {
+  counter-increment: step; content: counter(step);
+  display: grid; place-items: center;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--panel); border: 2px solid var(--brand); color: var(--brand);
+  font: 800 1.15rem/1 var(--display);
+}
+.flow > li::after {
+  content: ""; position: absolute; left: 21px; top: 48px; bottom: 4px; width: 2px; background: var(--line);
+}
+.flow > li:last-child::after { display: none; }
+.flow h3 { margin-bottom: 6px; padding-top: 9px; }
+.fork { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.fork > div { min-width: 0; padding: 14px 16px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+.fork strong { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.pill { font: 700 .72rem/1 var(--body); letter-spacing: .06em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; }
+.pill.ai { background: var(--ai-soft); color: var(--ai); }
+.pill.free { background: var(--free-soft); color: var(--free); }
+
+/* Demonstrações */
+.demo { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.demo-tabs { display: grid; gap: 6px; }
+.demo-tabs button {
+  text-align: left; cursor: pointer;
+  display: grid; gap: 2px;
+  padding: 12px 14px; border-radius: 10px;
+  background: transparent; border: 1px solid transparent; color: var(--ink);
+  font: 600 .98rem/1.3 var(--body);
+}
+.demo-tabs button small { font-weight: 400; color: var(--muted); font-size: .84rem; }
+.demo-tabs button:hover { background: var(--soft); }
+.demo-tabs button[aria-selected="true"] { background: var(--panel); border-color: var(--brand); box-shadow: var(--shadow); }
+.screen { min-width: 0; display: grid; gap: 12px; }
+.frame {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow);
+}
+.frame-bar { display: flex; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.frame-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.frame img { width: 100%; height: auto; aspect-ratio: 1888 / 816; object-fit: contain; background: var(--paper); }
+.screen p { color: var(--muted); }
+
+/* Recursos */
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.feature { min-width: 0; padding: 22px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); display: grid; gap: 8px; align-content: start; }
+.feature h3 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.feature p { color: var(--muted); font-size: .98rem; }
+
+/* Modelo */
+.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.plan { min-width: 0; padding: 28px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); display: grid; gap: 14px; align-content: start; }
+.plan.free { border-top: 6px solid var(--free); }
+.plan.ai { border-top: 6px solid var(--ai); }
+.plan .price { font: 800 2rem/1 var(--display); }
+.plan ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.note { margin-top: 18px; padding: 16px 18px; border-radius: 12px; background: var(--soft); }
+
+/* Perguntas */
+.questions { counter-reset: q; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.questions li { min-width: 0; padding: 18px 20px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; }
+.questions li::before { counter-increment: q; content: counter(q); font: 800 1.1rem/1.4 var(--display); color: var(--violet); }
+
+footer { padding-block: 40px; color: var(--muted); font-size: .92rem; border-top: 1px solid var(--line); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+
+@media (max-width: 900px) {
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); }
+  .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .demo { grid-template-columns: minmax(0, 1fr); }
+  .demo-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  nav.anchors { display: none; }
+  .features, .plans, .questions, .fork, .demo-tabs { grid-template-columns: minmax(0, 1fr); }
+  .flow > li { grid-template-columns: 44px minmax(0, 1fr); gap: 14px; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#inicio">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b4fe0"/><stop offset="1" stop-color="#3b6fd8"/></linearGradient></defs><path fill="url(#g)" d="M13.5 1 3 13.6h7.2L8.6 23 21 9.4h-7.4z"/></svg>
+      Manhwa Translate
+    </a>
+    <nav class="anchors" aria-label="Seções">
+      <a href="#fluxo">Fluxo</a>
+      <a href="#veja">Veja funcionando</a>
+      <a href="#recursos">Recursos</a>
+      <a href="#modelo">Modelo</a>
+      <a href="#perguntas">Perguntas</a>
+    </nav>
+  </div>
+</header>
+
+<main id="inicio">
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="eyebrow">Plataforma para scans</span>
+        <h1>Do .zip ao capítulo traduzido, com a sua equipe.</h1>
+        <p class="lead prose">O Manhwa Translate junta num só lugar tudo o que a scan faz hoje em várias ferramentas: separar páginas, achar os balões, limpar o inglês, traduzir, encaixar o texto, revisar e entregar o capítulo.</p>
+        <div class="tags">
+          <span class="tag free"><span class="dot"></span>Gratuito para usar</span>
+          <span class="tag ai"><span class="dot"></span>IA paga só quando você usa</span>
+          <span class="tag state"><span class="dot"></span>Em validação</span>
+        </div>
+      </div>
+      <div>
+        <div class="strip" role="img" aria-label="Balão de fala alternando entre o texto original em inglês e a tradução em português">
+          <div class="balloon">
+            <div class="lines">
+              <span class="en">What the-? Why does it look like that?</span>
+              <span class="pt">Que diabos-? Por que está com essa cara?</span>
+            </div>
+          </div>
+          <div class="panel-cut"></div>
+          <div class="lang"><b class="l-en">EN</b><b class="l-pt">PT</b></div>
+        </div>
+        <p class="strip-caption">Space Cheon Ma 3077, cap. 1, pág. 3: o mesmo balão antes e depois da plataforma.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="fluxo">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Fluxo</span>
+        <h2>Como um capítulo passa pela plataforma</h2>
+        <p class="lead prose">Cada etapa roda em lote, para vários capítulos de uma vez, e a tela mostra o andamento página por página.</p>
+      </div>
+      <ol class="flow">
+        <li>
+          <div>
+            <h3>Importar</h3>
+            <p class="prose muted">Envie um .zip por capítulo (1.zip, 2.zip…), vários de uma vez. As páginas entram em ordem, prontas para trabalhar.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Escanear</h3>
+            <p class="prose muted">A plataforma encontra os balões e textos de cada página, separa as páginas sem texto e junta os balões que começam numa página e terminam na outra.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Escolher o caminho</h3>
+            <div class="fork">
+              <div>
+                <strong>Tradução com IA <span class="pill ai">IA</span></strong>
+                <p class="muted">A IA lê o texto em inglês de cada balão, apaga o original, traduz e já desenha a tradução no lugar.</p>
+              </div>
+              <div>
+                <strong>Tradução manual <span class="pill free">Grátis</span></strong>
+                <p class="muted">Limpe os balões em lote e escreva a tradução você mesmo, com caixas de texto em cima da página limpa.</p>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Revisar e ajustar</h3>
+            <p class="prose muted">Abra cada página para corrigir o texto, mover, girar e redimensionar as caixas, apagar restos de letra e comentar problemas numa área da imagem.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Publicar</h3>
+            <p class="prose muted">Cada alteração publicada vira uma versão nova da página. A anterior fica no histórico e pode ser restaurada. Páginas podem ser aprovadas antes de sair.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Entregar</h3>
+            <p class="prose muted">Baixe os capítulos num .zip, com uma pasta por capítulo e as páginas na ordem de leitura.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="veja">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Veja funcionando</span>
+        <h2>Gravações da plataforma em uso</h2>
+        <p class="lead prose">Gravado com capítulos reais. Escolha uma etapa para ver.</p>
+      </div>
+      <div class="demo">
+        <div class="demo-tabs" role="tablist" aria-label="Demonstrações">
+          <button type="button" role="tab" id="tab-importar" aria-controls="screen" aria-selected="true" data-gif="gifs/importar.gif" data-text="Vários .zip de uma vez: cada arquivo vira um capítulo. A lista mostra o envio e a descompactação de cada um.">Importar capítulos<small>vários .zip de uma vez</small></button>
+          <button type="button" role="tab" id="tab-escanear" aria-controls="screen" aria-selected="false" data-gif="gifs/escanear.gif" data-text="Selecione os capítulos e escaneie. A coluna Escaneadas enche e as páginas sem texto ficam separadas.">Escanear em lote<small>acha balões e textos</small></button>
+          <button type="button" role="tab" id="tab-limpar" aria-controls="screen" aria-selected="false" data-gif="gifs/limpar.gif" data-text="Limpar balões apaga o inglês de todas as páginas escolhidas e gera a página limpa, pronta para a tradução manual.">Limpar balões em lote<small>tira o inglês das páginas</small></button>
+          <button type="button" role="tab" id="tab-caixa" aria-controls="screen" aria-selected="false" data-gif="gifs/caixa-de-texto.gif" data-text="Desenhe a caixa sobre o balão, escreva a tradução e ajuste fonte, tamanho, contorno, posição e rotação.">Criar e ajustar caixas<small>editor de texto</small></button>
+          <button type="button" role="tab" id="tab-duas" aria-controls="screen" aria-selected="false" data-gif="gifs/duas-paginas.gif" data-text="O balão continua na página seguinte? Veja as duas páginas coladas, alinhe a caixa e a cópia na outra página acompanha sozinha.">Texto entre duas páginas<small>alinhamento automático</small></button>
+          <button type="button" role="tab" id="tab-apagar" aria-controls="screen" aria-selected="false" data-gif="gifs/apagar-ingles.gif" data-text="Esconda o português, marque o pedaço de inglês que sobrou e apague. O fundo é refeito e a tradução é desenhada de novo por cima.">Apagar restos de inglês<small>borracha na página limpa</small></button>
+          <button type="button" role="tab" id="tab-tela" aria-controls="screen" aria-selected="false" data-gif="gifs/tela-cheia.gif" data-text="Tela cheia encaixa a página inteira na tela para revisar sem rolar, com as setas trocando de página.">Página inteira na tela<small>revisar sem rolar</small></button>
+        </div>
+        <div class="screen" id="screen" role="tabpanel" aria-labelledby="tab-importar">
+          <div class="frame">
+            <div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+            <img id="demo-img" src="gifs/importar.gif" alt="Gravação: importar capítulos" width="1888" height="816" decoding="async">
+          </div>
+          <p id="demo-text">Vários .zip de uma vez: cada arquivo vira um capítulo. A lista mostra o envio e a descompactação de cada um.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="recursos">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Recursos</span>
+        <h2>O que já está pronto</h2>
+      </div>
+      <div class="features">
+        <article class="feature">
+          <h3>Leitura do texto com IA <span class="pill ai">IA</span></h3>
+          <p>A IA lê o inglês de cada balão direto da imagem, inclusive letras estilizadas, narração e texto solto na arte.</p>
+        </article>
+        <article class="feature">
+          <h3>Tradução com IA <span class="pill ai">IA</span></h3>
+          <p>Traduz com o contexto do capítulo, separa fala, pensamento e narração e mantém as onomatopeias. Um glossário por série deixa nomes e termos sempre iguais.</p>
+        </article>
+        <article class="feature">
+          <h3>Escaneamento em lote</h3>
+          <p>Detecta balões e textos em capítulos inteiros, separa as páginas sem texto e trata como um só o balão cortado entre duas páginas.</p>
+        </article>
+        <article class="feature">
+          <h3>Limpeza de balões em lote</h3>
+          <p>Apaga o inglês e refaz o fundo, inclusive em cima de desenho, gerando a página limpa onde a tradução é escrita.</p>
+        </article>
+        <article class="feature">
+          <h3>Editor de texto</h3>
+          <p>Caixas editáveis por cima da página: fonte, tamanho, cor, contorno, alinhamento, entrelinha, rotação livre e redimensionamento pelos cantos.</p>
+        </article>
+        <article class="feature">
+          <h3>Texto entre páginas</h3>
+          <p>Mostra o fim da página anterior e o começo da próxima. Ajustar a caixa numa página alinha a cópia dela na outra.</p>
+        </article>
+        <article class="feature">
+          <h3>Versões de cada página</h3>
+          <p>Toda alteração publicada vira uma versão. O histórico guarda todas, e qualquer uma pode ser restaurada.</p>
+        </article>
+        <article class="feature">
+          <h3>Revisão por área</h3>
+          <p>Marque uma área da página para comentar, apagar restos de letra ou pedir para a IA reler e traduzir de novo só aquele trecho.</p>
+        </article>
+        <article class="feature">
+          <h3>Equipe e permissões</h3>
+          <p>Cada scan tem o seu espaço isolado, com admins, redatores, times, permissões por função e registro de quem fez o quê.</p>
+        </article>
+        <article class="feature">
+          <h3>Fila de processamento</h3>
+          <p>As etapas rodam em segundo plano, com andamento página por página, aviso ao terminar e nova tentativa automática quando algo falha.</p>
+        </article>
+        <article class="feature">
+          <h3>Importar e exportar</h3>
+          <p>Capítulos entram por .zip e saem por .zip, com uma pasta por capítulo, traduzidos ou originais.</p>
+        </article>
+        <article class="feature">
+          <h3>Tradução manual completa</h3>
+          <p>Quem prefere traduzir à mão usa todo o fluxo sem IA: escanear, limpar, escrever nas caixas, revisar, publicar e exportar.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="modelo">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Modelo</span>
+        <h2>Gratuito, menos a IA</h2>
+        <p class="lead prose">A plataforma é distribuída de graça. Só a leitura e a tradução com IA são pagas, porque cada uso tem um custo real de processamento.</p>
+      </div>
+      <div class="plans">
+        <div class="plan free">
+          <span class="eyebrow" style="color: var(--free)">Gratuito</span>
+          <p class="price">R$ 0</p>
+          <ul>
+            <li>Importar e exportar capítulos</li>
+            <li>Escanear em lote</li>
+            <li>Limpar balões em lote</li>
+            <li>Editor de texto e tradução manual</li>
+            <li>Texto entre páginas</li>
+            <li>Versões, revisão e aprovação</li>
+            <li>Equipe, times e permissões</li>
+          </ul>
+        </div>
+        <div class="plan ai">
+          <span class="eyebrow" style="color: var(--ai)">Pago por uso</span>
+          <p class="price">IA</p>
+          <ul>
+            <li>Leitura do texto dos balões com IA</li>
+            <li>Tradução com IA, com glossário da série</li>
+            <li>Reler e traduzir de novo uma área marcada</li>
+          </ul>
+          <p class="muted">Você só paga pelas páginas que mandar para a IA. Quem traduz à mão não paga nada.</p>
+        </div>
+      </div>
+      <p class="note prose">Dá para misturar: traduzir com IA e revisar à mão, ou usar a IA só nos capítulos com prazo apertado.</p>
+    </div>
+  </section>
+
+  <section id="perguntas">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Para a nossa conversa</span>
+        <h2>O que eu quero entender com você</h2>
+        <p class="lead prose">A plataforma está em validação. Estas são as perguntas que vão dizer se ela resolve o problema da sua scan.</p>
+      </div>
+      <ol class="questions">
+        <li><p>Como a sua scan traduz um capítulo hoje, e quais ferramentas usa em cada etapa?</p></li>
+        <li><p>Quanto tempo leva um capítulo, do download até a entrega? Qual etapa toma mais tempo?</p></li>
+        <li><p>Vocês trabalhariam com tradução manual na plataforma, com IA, ou misturando os dois?</p></li>
+        <li><p>A tradução da IA, revisada pela equipe, chegaria no nível que vocês publicam?</p></li>
+        <li><p>Tudo grátis e só a IA paga faz sentido para vocês? Quanto pagariam pela IA num capítulo?</p></li>
+        <li><p>O que falta para trocar o fluxo atual por este? Formato de entrega, fontes, algum passo que não aparece aqui?</p></li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Manhwa Translate · plataforma em validação</span>
+    <span>Gravações feitas com capítulos reais de teste</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const tabs = Array.from(document.querySelectorAll('.demo-tabs [role="tab"]'));
+  const img = document.getElementById('demo-img');
+  const text = document.getElementById('demo-text');
+  const panel = document.getElementById('screen');
+  const select = (tab, focus) => {
+    tabs.forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+    img.src = tab.dataset.gif;
+    img.alt = 'Gravação: ' + tab.firstChild.textContent.trim().toLowerCase();
+    text.textContent = tab.dataset.text;
+    panel.setAttribute('aria-labelledby', tab.id);
+    if (focus) tab.focus();
+  };
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => select(tab, false));
+    tab.addEventListener('keydown', (e) => {
+      const step = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
+      if (!step) return;
+      e.preventDefault();
+      select(tabs[(i + step + tabs.length) % tabs.length], true);
+    });
+  });
+})();
+</script>
+</body>
+</html>
